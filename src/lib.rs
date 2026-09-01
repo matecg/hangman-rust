@@ -86,13 +86,15 @@ pub mod game {
             }
 
             self.guesses.push(guess.to_ascii_uppercase());
-            if !self.guess_in_word(guess) {
+            let matches = self.count_guess_on_secret(guess);
+            if matches == 0{
                 self.guesses_left -= 1;
                 Err(GuessErr::Incorrect(format!(
                     "{guess} does not belong to the mysterious word."
                 )))
             } else {
-                self.correct_guesses += 1;
+                // Update correct guesses considering all possible repetitions
+                self.correct_guesses += matches;
                 Ok(())
             }
         }
@@ -112,9 +114,9 @@ pub mod game {
             self.guesses.contains(&guess)
         }
 
-        pub fn guess_in_word(&self, guess: char) -> bool {
+        pub fn count_guess_on_secret(&self, guess: char) -> usize {
             let guess = guess.to_ascii_lowercase();
-            self.secret.contains(guess)
+            self.secret.matches(guess).count()
         }
 
         fn secret_found(&self) -> bool {
@@ -154,10 +156,10 @@ pub mod game {
             let guess = 'S';
             let state = get_empty_state("secret");
 
-            assert!(state.guess_in_word(guess));
+            assert_eq!(state.count_guess_on_secret(guess), 1);
 
             let guess = 's';
-            assert!(state.guess_in_word(guess));
+            assert_eq!(state.count_guess_on_secret(guess), 1);
         }
 
         #[test]
@@ -165,10 +167,10 @@ pub mod game {
             let guess = 'K';
             let state = get_empty_state("secret");
 
-            assert!(!state.guess_in_word(guess));
+            assert_eq!(state.count_guess_on_secret(guess), 0);
 
             let guess = 'k';
-            assert!(!state.guess_in_word(guess));
+            assert_eq!(state.count_guess_on_secret(guess), 0);
         }
 
         mod state_try_guess {

@@ -15,7 +15,6 @@ fn main() {
     let mut game_result = state.is_game_over();
 
     while game_result == GameResult::OnGoing {
-        clear_console();
         print_game_state(&state);
         let guess = get_guess();
         let result = state.try_guess(guess);
@@ -32,11 +31,13 @@ fn main() {
         pause_console();
     }
 
+    print_game_state(&state);
     match game_result {
-        GameResult::Win => println!("⭐ YOU WON ⭐\nThere were still {} guesses left!", state.guesses_left()),
+        GameResult::Win => println!("\n\t\t\t⭐ YOU WON ⭐\n",),
         GameResult::Lose => println!("YOU LOSE ☹️\nThe secret word was: {}", state.secret()),
         GameResult::OnGoing => panic!("Error: Game loop should never end if game still on going."),
     }
+    print_separator();
 
     //TODO: Offers to play again
 }
@@ -65,6 +66,7 @@ fn get_guess() -> char {
 }
 
 fn print_game_state(state: &State) {
+    clear_console();
     print_separator();
     println!();
     for c in state.secret().chars() {
@@ -79,7 +81,7 @@ fn print_game_state(state: &State) {
     println!("\nAttempts left: {}", state.guesses_left());
     print!("Guessed: ");
     for c in state.guesses() {
-        if !state.guess_in_word(*c) {
+        if state.count_guess_on_secret(*c) == 0 {
             print!(" {}, ", c.to_ascii_uppercase());
         }
     }
