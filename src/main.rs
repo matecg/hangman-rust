@@ -3,19 +3,55 @@ use std::{
     process::Command,
 };
 
-use hangman::{game::State, secret};
+use hangman::{
+    game::{GuessErr, State},
+    secret,
+};
 
 fn main() {
     print_initial_message();
 
     let secret = secret::get_random_word();
-    let state = State::new(secret);
+    let mut state = State::new(secret);
 
     print_game_state(&state);
+    let guess = get_guess();
+    let result = state.try_guess(guess);
+    match result {
+        Ok(_) => println!("Nice one! {guess} belongs to the mysterious word! 🎯"),
+        Err(e) => match e {
+            GuessErr::Repeated(msg) => println!("{}", msg),
+            GuessErr::Invalid(msg) => println!("{}", msg),
+            GuessErr::Incorrect(msg) => println!("{}", msg),
+        },
+    }
     // Collect guess
     // Process guess
     // Repeat until game over
     // Offers to play again
+}
+
+fn get_guess() -> char {
+    let mut buffer = String::new();
+
+    loop {
+        print!("Enter your guess: ");
+
+        io::stdout().flush().unwrap();
+        buffer.clear();
+
+        if io::stdin().read_line(&mut buffer).is_err() {
+            println!("Sorry, that option is invalid. Please try again.");
+            continue;
+        }
+
+        match buffer.trim().parse::<char>() {
+            Ok(guess) => return guess,
+            Err(_) => {
+                println!("Sorry, that option is invalid. Please try again.");
+            }
+        }
+    }
 }
 
 fn print_game_state(state: &State) {
