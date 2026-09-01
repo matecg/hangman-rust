@@ -4,12 +4,17 @@ use std::{
 };
 
 use hangman::{
-    game::{GameResult, GuessErr, State}, secret,
+    game::{GameResult, GuessErr, State},
+    secret,
 };
 
 fn main() {
     print_initial_message();
 
+    run_game_loop();
+}
+
+fn run_game_loop() {
     let secret = secret::get_random_word();
     let mut state = State::new(secret);
     let mut game_result = state.is_game_over();
@@ -26,11 +31,14 @@ fn main() {
                 GuessErr::Incorrect(msg) => println!("{}", msg),
             },
         }
-        
+
         game_result = state.is_game_over();
         pause_console();
     }
+    print_game_over_message(&state, game_result);
+}
 
+fn print_game_over_message(state: &State, game_result: GameResult) {
     print_game_state(&state);
     match game_result {
         GameResult::Win => println!("\n\t\t\t⭐ YOU WON ⭐\n",),
@@ -38,8 +46,6 @@ fn main() {
         GameResult::OnGoing => panic!("Error: Game loop should never end if game still on going."),
     }
     print_separator();
-
-    //TODO: Offers to play again
 }
 
 fn get_guess() -> char {
