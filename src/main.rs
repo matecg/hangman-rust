@@ -4,8 +4,7 @@ use std::{
 };
 
 use hangman::{
-    game::{GuessErr, State},
-    secret,
+    game::{GameResult, GuessErr, State}, secret,
 };
 
 fn main() {
@@ -13,22 +12,33 @@ fn main() {
 
     let secret = secret::get_random_word();
     let mut state = State::new(secret);
+    let mut game_result = state.is_game_over();
 
-    print_game_state(&state);
-    let guess = get_guess();
-    let result = state.try_guess(guess);
-    match result {
-        Ok(_) => println!("Nice one! {guess} belongs to the mysterious word! 🎯"),
-        Err(e) => match e {
-            GuessErr::Repeated(msg) => println!("{}", msg),
-            GuessErr::Invalid(msg) => println!("{}", msg),
-            GuessErr::Incorrect(msg) => println!("{}", msg),
-        },
+    while game_result == GameResult::OnGoing {
+        clear_console();
+        print_game_state(&state);
+        let guess = get_guess();
+        let result = state.try_guess(guess);
+        match result {
+            Ok(_) => println!("Nice one! {guess} belongs to the mysterious word! 🎯"),
+            Err(e) => match e {
+                GuessErr::Repeated(msg) => println!("{}", msg),
+                GuessErr::Invalid(msg) => println!("{}", msg),
+                GuessErr::Incorrect(msg) => println!("{}", msg),
+            },
+        }
+        
+        game_result = state.is_game_over();
+        pause_console();
     }
-    // Collect guess
-    // Process guess
-    // Repeat until game over
-    // Offers to play again
+
+    match game_result {
+        GameResult::Win => println!("⭐ YOU WON ⭐\nThere were still {} guesses left!", state.guesses_left()),
+        GameResult::Lose => println!("YOU LOSE ☹️\nThe secret word was: {}", state.secret()),
+        GameResult::OnGoing => panic!("Error: Game loop should never end if game still on going."),
+    }
+
+    //TODO: Offers to play again
 }
 
 fn get_guess() -> char {
@@ -96,14 +106,18 @@ fn print_initial_message() {
     );
     print_separator();
 
+    pause_console();
+
+    clear_console();
+}
+
+fn pause_console() {
     let mut stdout = io::stdout();
     println!("Press any key to continue...");
     stdout.flush().unwrap();
 
     let mut _buffer = String::new();
     io::stdin().read_line(&mut _buffer).unwrap();
-
-    clear_console();
 }
 
 fn clear_console() {
