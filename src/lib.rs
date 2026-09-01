@@ -25,10 +25,18 @@ pub mod secret {
 }
 
 pub mod game {
+    #[derive(Debug, PartialEq)]
+    pub enum GameResult {
+        Win,
+        Lose,
+        OnGoing,
+    }
+
     #[derive(Debug)]
     pub enum GuessErr {
         Repeated(String),
         Invalid(String),
+        Incorrect(String),
     }
 
     #[derive(Debug)]
@@ -36,6 +44,7 @@ pub mod game {
         guesses_left: u8,
         secret: String,
         guesses: Vec<char>,
+        correct_guesses: usize,
     }
 
     impl State {
@@ -44,6 +53,7 @@ pub mod game {
                 guesses_left: 7,
                 secret: String::from(secret.to_ascii_lowercase()),
                 guesses: Vec::new(),
+                correct_guesses: 0,
             }
         }
 
@@ -60,6 +70,7 @@ pub mod game {
         }
 
         pub fn try_guess(&mut self, guess: char) -> Result<(), GuessErr> {
+            let guess = guess.to_ascii_uppercase();
             if self.guesses_left == 0 {
                 return Err(GuessErr::Invalid(format!(
                     "Attempted to guess after running out of guesses."
@@ -77,9 +88,23 @@ pub mod game {
             self.guesses.push(guess.to_ascii_uppercase());
             if !self.guess_in_word(guess) {
                 self.guesses_left -= 1;
+                Err(GuessErr::Incorrect(format!(
+                    "{guess} does not belong to the mysterious word."
+                )))
+            } else {
+                self.correct_guesses += 1;
+                Ok(())
             }
+        }
 
-            Ok(())
+        pub fn is_game_over(&self) -> GameResult {
+            if self.guesses_left == 0 {
+                GameResult::Lose
+            } else if self.secret_found() {
+                GameResult::Win
+            } else {
+                GameResult::OnGoing
+            }
         }
 
         pub fn guessed_before(&self, guess: char) -> bool {
@@ -90,6 +115,10 @@ pub mod game {
         pub fn guess_in_word(&self, guess: char) -> bool {
             let guess = guess.to_ascii_lowercase();
             self.secret.contains(guess)
+        }
+
+        fn secret_found(&self) -> bool {
+            self.correct_guesses == self.secret.len()
         }
     }
 
@@ -150,11 +179,11 @@ pub mod game {
                 const INVALIDS: [char; 5] = ['1', '.', ' ', ';', '0'];
                 let mut state = get_empty_state("secret");
 
-                for inval in INVALIDS {
-                    let result = state.try_guess(inval);
+                for invalid in INVALIDS {
+                    let result = state.try_guess(invalid);
 
                     if let Err(GuessErr::Invalid(msg)) = result {
-                        assert_eq!(msg, format!("{inval} is not alphabetic."));
+                        assert_eq!(msg, format!("{invalid} is not alphabetic."));
                     } else {
                         panic!("Expected GuessErr::Invalid, but got: {:?}", result);
                     }
@@ -190,14 +219,15 @@ pub mod game {
 
             #[test]
             fn can_process_incorrect_guess() {
-                let invalid = 'G';
+                let invalid = 'g';
                 let mut state = get_empty_state("secret");
                 let guesses_left = state.guesses_left;
 
                 let result = state.try_guess(invalid);
-                if let Ok(_) = result {
+                if let Err(GuessErr::Incorrect(msg)) = result {
                     assert_eq!(state.guesses_left, guesses_left - 1);
-                    assert!(state.guesses.contains(&invalid));
+                    assert!(state.guesses.contains(&invalid.to_ascii_uppercase()));
+                    assert_eq!(msg, format!("{} does not belong to the mysterious word.", invalid.to_ascii_uppercase()))
                 } else {
                     panic!(
                         "Expected to correctly process invalid guess when there are guesses left."
@@ -226,6 +256,7 @@ pub mod game {
                 guesses_left: 7,
                 secret: String::from(secret),
                 guesses: Vec::new(),
+                correct_guesses: 0,
             }
         }
     }
