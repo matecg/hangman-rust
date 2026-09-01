@@ -3,20 +3,42 @@ use std::{
     process::Command,
 };
 
-use hangman::{game, secret};
+use hangman::{game::State, secret};
 
 fn main() {
     print_initial_message();
 
     let secret = secret::get_random_word();
-    let state = game::State::new(secret);
+    let state = State::new(secret);
 
-    println!("{:#?}", state);
-    // Print current game state
+    print_game_state(&state);
     // Collect guess
     // Process guess
     // Repeat until game over
     // Offers to play again
+}
+
+fn print_game_state(state: &State) {
+    print_separator();
+    println!();
+    for c in state.secret().chars() {
+        if state.guessed_before(c) {
+            print!(" {} ", c.to_ascii_uppercase())
+        } else {
+            print!(" _ ");
+        }
+    }
+    println!();
+    print_separator();
+    println!("\nAttempts left: {}", state.guesses_left());
+    print!("Guessed: ");
+    for c in state.guesses() {
+        if !state.guess_in_word(*c) {
+            print!(" {}, ", c.to_ascii_uppercase());
+        }
+    }
+    println!("\n");
+    print_separator();
 }
 
 fn print_separator() {

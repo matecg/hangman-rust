@@ -51,6 +51,14 @@ pub mod game {
             self.guesses_left
         }
 
+        pub fn secret(&self) -> &str {
+            &self.secret
+        }
+
+        pub fn guesses(&self) -> &Vec<char> {
+            &self.guesses
+        }
+
         pub fn try_guess(&mut self, guess: char) -> Result<(), GuessErr> {
             if self.guesses_left == 0 {
                 return Err(GuessErr::Invalid(format!(
