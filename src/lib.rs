@@ -25,6 +25,7 @@ pub mod secret {
 }
 
 pub mod game {
+    /// Represent different game states a game may be
     #[derive(Debug, PartialEq)]
     pub enum GameResult {
         Win,
@@ -32,6 +33,7 @@ pub mod game {
         OnGoing,
     }
 
+    /// Represents all the errors related with player guesses
     #[derive(Debug)]
     pub enum GuessErr {
         Repeated(String),
@@ -39,6 +41,7 @@ pub mod game {
         Incorrect(String),
     }
 
+    /// Contains all the state used in a game session
     #[derive(Debug)]
     pub struct State {
         guesses_left: u8,
@@ -171,6 +174,50 @@ pub mod game {
 
             let guess = 'k';
             assert_eq!(state.count_guess_on_secret(guess), 0);
+        }
+
+        #[test]
+        fn can_count_correct_guesses() {
+            let state = get_empty_state("banana");
+
+            assert_eq!(state.count_guess_on_secret('a'), 3);
+            assert_eq!(state.count_guess_on_secret('A'), 3);
+            assert_eq!(state.count_guess_on_secret('n'), 2);
+            assert_eq!(state.count_guess_on_secret('N'), 2);
+            assert_eq!(state.count_guess_on_secret('b'), 1);
+            assert_eq!(state.count_guess_on_secret('B'), 1);
+            assert_eq!(state.count_guess_on_secret('g'), 0);
+            assert_eq!(state.count_guess_on_secret('G'), 0);
+        }
+
+        #[test]
+        fn report_lost_if_out_of_guesses() {
+            let mut state = get_empty_state("secret");
+            state.guesses_left = 0;
+
+            let actual = state.is_game_over();
+
+            assert_eq!(actual, GameResult::Lose);
+        }
+
+        #[test]
+        fn report_win_if_secret_len_equals_correct_guesses() {
+            let secret = "secret";
+            let mut state = get_empty_state(secret);
+            state.correct_guesses = secret.len();
+
+            let actual = state.is_game_over();
+
+            assert_eq!(actual, GameResult::Win);
+        }
+
+        #[test]
+        fn report_on_going_game_correctly() {
+            let state = get_empty_state("secret");
+
+            let actual = state.is_game_over();
+
+            assert_eq!(actual, GameResult::OnGoing);
         }
 
         mod state_try_guess {
